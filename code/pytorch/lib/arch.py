@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torchvision.models as models
+from torch.nn import functional as F
 
 class ReNet(nn.Module):
 
@@ -10,6 +11,11 @@ class ReNet(nn.Module):
         self.rnn_ver = nn.GRU(n_units * 2, n_units, num_layers=1, batch_first=True, bidirectional=True)
 
     def tile(self, x):
+
+        n_height_padding = x.size(2) % 2
+        n_width_padding = x.size(3) % 2
+
+        x = F.pad(x, (0, n_width_padding, 0, n_height_padding))
 
         b, n_filters, n_height, n_width = x.size()
 
