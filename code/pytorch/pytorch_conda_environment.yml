@@ -35,7 +35,6 @@ dependencies:
 - xz=5.2.3=0
 - zlib=1.2.11=0
 - pytorch=0.2.0=py27ha262b23_4cu75
-- torchvision=0.1.9=py27hdb88a65_1
 - pip:
   - backports.shutil-get-terminal-size==1.0.0
   - convertdate==2.1.1
@@ -70,5 +69,6 @@ dependencies:
   - umalqurra==0.2
   - wcwidth==0.1.7
   - xlrd==1.0.0
+  - torchvision==0.2.0
 prefix: /home/jcmaxwell/Libraries/anaconda2/envs/reseg-pytorch
 
