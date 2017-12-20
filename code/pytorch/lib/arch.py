@@ -4,31 +4,46 @@ from torch.nn import functional as F
 
 class ReNet(nn.Module):
 
-    def __init__(self, n_input, n_units, usegpu=True):
+    def __init__(self, n_input, n_units, patch_size=(1, 1), usegpu=True):
         super(ReNet, self).__init__()
 
-        self.rnn_hor = nn.GRU(n_input * 2 * 2, n_units, num_layers=1, batch_first=True, bidirectional=True)
+        self.patch_size_height = int(patch_size[0])
+        self.patch_size_width = int(patch_size[1])
+
+        assert self.patch_size_height >= 1
+        assert self.patch_size_width >= 1
+
+        self.tiling = False if ((self.patch_size_height == 1) and (self.patch_size_width == 1)) else True
+
+        self.rnn_hor = nn.GRU(n_input * self.patch_size_height * self.patch_size_width, n_units,
+                              num_layers=1, batch_first=True, bidirectional=True)
         self.rnn_ver = nn.GRU(n_units * 2, n_units, num_layers=1, batch_first=True, bidirectional=True)
 
     def tile(self, x):
 
-        n_height_padding = x.size(2) % 2
-        n_width_padding = x.size(3) % 2
+        n_height_padding = self.patch_size_height - x.size(2) % self.patch_size_height
+        n_width_padding = self.patch_size_width - x.size(3) % self.patch_size_width
 
-        x = F.pad(x, (0, n_width_padding, 0, n_height_padding))
+        n_top_padding = n_height_padding / 2
+        n_bottom_padding = n_height_padding - n_top_padding
+
+        n_left_padding = n_width_padding / 2
+        n_right_padding = n_width_padding - n_left_padding
+
+        x = F.pad(x, (n_left_padding, n_right_padding, n_top_padding, n_bottom_padding))
 
         b, n_filters, n_height, n_width = x.size()
 
-        assert n_height % 2 == 0
-        assert n_width & 2 == 0
+        assert n_height % self.patch_size_height == 0
+        assert n_width % self.patch_size_width == 0
 
-        new_height = n_height / 2
-        new_width = n_width / 2
+        new_height = n_height / self.patch_size_height
+        new_width = n_width / self.patch_size_width
 
-        x = x.view(b, n_filters, new_height, 2, new_width, 2)
+        x = x.view(b, n_filters, new_height, self.patch_size_height, new_width, self.patch_size_width)
         x = x.permute(0, 2, 4, 1, 3, 5)
         x = x.contiguous()
-        x = x.view(b, new_height, new_width, 2 * 2 * n_filters)
+        x = x.view(b, new_height, new_width, self.patch_size_height * self.patch_size_width * n_filters)
         x = x.permute(0, 3, 1, 2)
         x = x.contiguous()
 
@@ -53,7 +68,8 @@ class ReNet(nn.Module):
     def forward(self, x):
 
                                        #b, nf, h, w
-        x = self.tile(x)               #b, nf, h, w
+        if self.tiling:
+            x = self.tile(x)           #b, nf, h, w
         x = x.permute(0, 2, 3, 1)      #b, h, w, nf
         x = x.contiguous()
         x = self.rnn_forward(x, 'hor') #b, h, w, nf
@@ -90,8 +106,8 @@ class Architecture(nn.Module):
         self.n_classes = n_classes
 
         self.cnn = CNN(usegpu=usegpu)
-        self.renet1 = ReNet(512, 256, usegpu=usegpu)
-        self.renet2 = ReNet(256 * 2, 256, usegpu=usegpu)
+        self.renet1 = ReNet(512, 256, patch_size=(2, 2), usegpu=usegpu)
+        self.renet2 = ReNet(256 * 2, 256, patch_size=(2, 2), usegpu=usegpu)
         self.upsampling1 = nn.ConvTranspose2d(256 * 2, 256, kernel_size=(10, 18), stride=(3, 4))
         self.upsampling2 = nn.ConvTranspose2d(256, 256, kernel_size=(10, 13), stride=(3, 3))
         self.upsampling3 = nn.ConvTranspose2d(256, 128, kernel_size=(25, 10), stride=(3, 2))
