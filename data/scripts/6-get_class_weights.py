@@ -30,9 +30,17 @@ for image_name in lst:
             class_dist[c] = 0
         class_dist[c] += 1
 
-class_dist = np.array([[k, v] for k, v in class_dist.iteritems()], dtype='int')
-classes = class_dist[:, 0]
-class_counts = class_dist[:, 1]
+classes = []
+class_counts = []
+for i in range(n_classes):
+    classes.append(i)
+    if class_dist.has_key(i):
+        class_counts.append(class_dist[i])
+    else:
+        class_counts.append(0)
+
+classes = np.array(classes, dtype='int')
+class_counts = np.array(class_counts, dtype='int')
 
 class_size_counts = np.zeros(classes.shape)
 for c, s in zip(classes_in_annotations, annotation_sizes):
@@ -40,13 +48,13 @@ for c, s in zip(classes_in_annotations, annotation_sizes):
         class_size_counts[cc] += s
 
 priors = class_counts.astype('float') / class_size_counts
-w_freq = np.median(priors) / priors
+w_freq = np.median(priors[~np.isnan(priors)]) / priors
 
 class_dist = {c : w for c, w in zip(classes, w_freq)}
 
 class_dist_all = []
 for i in range(n_classes):
-    if class_dist.has_key(i):
+    if not np.isnan(class_dist[i]):
         class_dist_all.append([i, class_dist[i]])
     else:
         class_dist_all.append([i, 0.0])
