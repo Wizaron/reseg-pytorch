@@ -13,24 +13,36 @@ n_classes = len(labels)
 lst_filepath = os.path.join(DATA_DIR, 'metadata', 'training.lst')
 lst = np.loadtxt(lst_filepath, dtype='str', delimiter=' ')
 
+classes_in_annotations = []; annotation_sizes = []
 class_dist = dict()
 for image_name in lst:
     ann_path = os.path.join(ANN_DIR, image_name + '.png')
     img = Image.open(ann_path)
     img_np = np.array(img)
     img.close()
+
+    classes_in_annotations.append(np.unique(img_np))
+    annotation_sizes.append(img_np.size)
+
     classes = img_np.flatten()
     for c in classes:
         if not class_dist.has_key(c):
             class_dist[c] = 0
         class_dist[c] += 1
 
-class_dist = np.array([[k, v] for k, v in class_dist.iteritems()], dtype='float')
+class_dist = np.array([[k, v] for k, v in class_dist.iteritems()], dtype='int')
+classes = class_dist[:, 0]
+class_counts = class_dist[:, 1]
 
-class_dist[:, 1] = 1.0 / class_dist[:, 1]
-n_total = class_dist[:, 1].sum()
-class_dist[:, 1] = len(class_dist) * class_dist[:, 1] / n_total
-class_dist = {k : v for k, v in class_dist}
+class_size_counts = np.zeros(classes.shape)
+for c, s in zip(classes_in_annotations, annotation_sizes):
+    for cc in c:
+        class_size_counts[cc] += s
+
+priors = class_counts.astype('float') / class_size_counts
+w_freq = np.median(priors) / priors
+
+class_dist = {c : w for c, w in zip(classes, w_freq)}
 
 class_dist_all = []
 for i in range(n_classes):
