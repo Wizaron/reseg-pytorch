@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='', help="path to model (to continue training)")
 parser.add_argument('--usegpu', action='store_true', help='enables cuda to train on gpu')
 parser.add_argument('--nepochs', type=int, default=200, help='number of epochs to train for')
-parser.add_argument('--batchsize', type=int, default=4, help='input batch size')
+parser.add_argument('--batchsize', type=int, default=1, help='input batch size')
 parser.add_argument('--nworkers', type=int, help='number of data loading workers [0 to do it using main process]', default=3)
 opt = parser.parse_args()
 
