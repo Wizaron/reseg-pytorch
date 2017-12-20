@@ -89,7 +89,7 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
 
         self.model = models.__dict__['resnet50'](pretrained=True)
-        self.model = nn.Sequential(*list(self.model.children())[:-4])
+        self.model = nn.Sequential(*list(self.model.children())[:-5])
 
     def forward(self, x):
 
@@ -106,16 +106,13 @@ class Architecture(nn.Module):
         self.n_classes = n_classes
 
         self.cnn = CNN(usegpu=usegpu)
-        self.renet1 = ReNet(512, 256, patch_size=(2, 2), usegpu=usegpu)
-        self.renet2 = ReNet(256 * 2, 256, patch_size=(2, 2), usegpu=usegpu)
-        self.upsampling1 = nn.ConvTranspose2d(256 * 2, 256, kernel_size=(10, 18), stride=(3, 4))
-        self.upsampling2 = nn.ConvTranspose2d(256, 256, kernel_size=(10, 13), stride=(3, 3))
-        self.upsampling3 = nn.ConvTranspose2d(256, 128, kernel_size=(25, 10), stride=(3, 2))
-        self.upsampling4 = nn.ConvTranspose2d(128, self.n_classes, kernel_size=(20, 17), stride=(1, 1))
-
+        self.renet1 = ReNet(256, 256, usegpu=usegpu)
+        self.renet2 = ReNet(256 * 2, 256, usegpu=usegpu)
+        self.upsampling1 = nn.ConvTranspose2d(256 * 2, 128, kernel_size=(2, 2), stride=(2, 2))
         self.relu1 = nn.ReLU()
+        self.upsampling2 = nn.ConvTranspose2d(128, 128, kernel_size=(2, 2), stride=(2, 2))
         self.relu2 = nn.ReLU()
-        self.relu3 = nn.ReLU()
+        self.upsampling3 = nn.ConvTranspose2d(128, self.n_classes, kernel_size=(1, 1), stride=(1, 1))
 
     def forward(self, x):
         x = self.cnn(x)
@@ -123,6 +120,5 @@ class Architecture(nn.Module):
         x = self.renet2(x)
         x = self.relu1(self.upsampling1(x))
         x = self.relu2(self.upsampling2(x))
-        x = self.relu3(self.upsampling3(x))
-        x = self.upsampling4(x)
+        x = self.upsampling3(x)
         return x
