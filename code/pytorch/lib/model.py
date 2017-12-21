@@ -104,7 +104,7 @@ class Model(object):
         return averager()
 
     def __minibatch(self, train_test_iter, clip_grad_norm, train_cnn=True, mode='training'):
-        assert mode in ['training', 'validation'], 'Mode must be either "training" or "validation"'
+        assert mode in ['training', 'test'], 'Mode must be either "training" or "test"'
 
         if mode == 'training':
             for param in self.model.parameters():
@@ -147,7 +147,7 @@ class Model(object):
 
         return cost, predictions, cpu_annotations
 
-    def __validate(self, test_loader):
+    def __test(self, test_loader):
         n_minibatches = len(test_loader)
 
         test_loss_averager = Model.__get_loss_averager()
@@ -156,7 +156,7 @@ class Model(object):
         n_correct, n_total = 0.0, 0.0
 
         for minibatch_index in range(n_minibatches):
-            cost, predictions, cpu_annotations = self.__minibatch(test_iter, 0.0, False, mode='validation')
+            cost, predictions, cpu_annotations = self.__minibatch(test_iter, 0.0, False, mode='test')
             test_loss_averager.add(cost)
 
             _, predictions = predictions.max(1)
@@ -166,7 +166,7 @@ class Model(object):
         loss = test_loss_averager.val()
         accuracy = n_correct / n_total
 
-        print 'Validation Loss: {}, Accuracy: {}'.format(loss, accuracy)
+        print 'Test Loss: {}, Accuracy: {}'.format(loss, accuracy)
 
         return accuracy, loss
 
@@ -184,7 +184,7 @@ class Model(object):
         self.__define_criterion(class_weights)
         self.__define_optimizer(learning_rate, weight_decay, lr_drop_factor, lr_drop_patience, optimizer=optimizer)
 
-        self.__validate(test_loader)
+        self.__test(test_loader)
 
         best_val_loss, best_val_acc = np.Inf, 0.0
         for epoch in range(n_epochs):
@@ -215,7 +215,7 @@ class Model(object):
             print '[{}] [{}/{}] Loss : {} - Accuracy : {}'.format(epoch_duration, epoch, n_epochs, train_loss,
                                                                   train_accuracy)
 
-            val_accuracy, val_loss = self.__validate(test_loader)
+            val_accuracy, val_loss = self.__test(test_loader)
 
             self.lr_scheduler.step(val_accuracy)
 
@@ -240,6 +240,13 @@ class Model(object):
 
         training_log_file.close()
         validation_log_file.close()
+
+    def test(self, class_weights, test_loader):
+
+        self.__define_criterion(class_weights)
+        test_accuracy, test_loss = self.__test(test_loader)
+
+        return test_accuracy, test_loss
 
     def predict(self, images):
 

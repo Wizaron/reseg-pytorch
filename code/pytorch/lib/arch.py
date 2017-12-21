@@ -88,8 +88,9 @@ class CNN(nn.Module):
     def __init__(self, usegpu=True):
         super(CNN, self).__init__()
 
-        self.model = models.__dict__['resnet50'](pretrained=True)
-        self.model = nn.Sequential(*list(self.model.children())[:-5])
+        self.model = models.__dict__['vgg16'](pretrained=True)
+        self.model = nn.Sequential(*list(self.model.children())[0]) #TODO resnet50 :-5
+        self.model = nn.Sequential(*list(self.model.children())[:16])
 
     def forward(self, x):
 
@@ -112,7 +113,7 @@ class Architecture(nn.Module):
         self.relu1 = nn.ReLU()
         self.upsampling2 = nn.ConvTranspose2d(128, 128, kernel_size=(2, 2), stride=(2, 2))
         self.relu2 = nn.ReLU()
-        self.upsampling3 = nn.ConvTranspose2d(128, self.n_classes, kernel_size=(1, 1), stride=(1, 1))
+        self.output = nn.Conv2d(128, self.n_classes, kernel_size=(1, 1), stride=(1, 1))
 
     def forward(self, x):
         x = self.cnn(x)
@@ -120,5 +121,5 @@ class Architecture(nn.Module):
         x = self.renet2(x)
         x = self.relu1(self.upsampling1(x))
         x = self.relu2(self.upsampling2(x))
-        x = self.upsampling3(x)
+        x = self.output(x)
         return x

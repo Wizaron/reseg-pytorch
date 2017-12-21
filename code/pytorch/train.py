@@ -7,7 +7,7 @@ from settings import TrainingSettings
 ts = TrainingSettings()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', default='', help="path to model (to continue training)")
+parser.add_argument('--model', default='', help='path to model (to continue training)')
 parser.add_argument('--usegpu', action='store_true', help='enables cuda to train on gpu')
 parser.add_argument('--nepochs', type=int, default=200, help='number of epochs to train for')
 parser.add_argument('--batchsize', type=int, default=1, help='input batch size')
@@ -50,14 +50,18 @@ if opt.usegpu:
 
 train_dataset = SegDataset(ts.TRAINING_LMDB)
 train_align_collate = AlignCollate('training', ts.MEAN, ts.STD, ts.IMAGE_SIZE_HEIGHT, ts.IMAGE_SIZE_WIDTH,
-                                   ts.ANNOTATION_SIZE_HEIGHT, ts.ANNOTATION_SIZE_WIDTH, ts.CROP_SCALE, ts.CROP_AR)
+                                   ts.ANNOTATION_SIZE_HEIGHT, ts.ANNOTATION_SIZE_WIDTH,
+                                   ts.CROP_SCALE, ts.CROP_AR, random_cropping=ts.RANDOM_CROPPING,
+                                   horizontal_flipping=ts.HORIZONTAL_FLIPPING)
 assert train_dataset
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.batchsize, shuffle=True,
                                            num_workers=opt.nworkers, pin_memory=pin_memory, collate_fn=train_align_collate)
 
 test_dataset = SegDataset(ts.VALIDATION_LMDB)
-test_align_collate = AlignCollate('validation', ts.MEAN, ts.STD, ts.IMAGE_SIZE_HEIGHT, ts.IMAGE_SIZE_WIDTH,
-                                  ts.ANNOTATION_SIZE_HEIGHT, ts.ANNOTATION_SIZE_WIDTH, ts.CROP_SCALE, ts.CROP_AR)
+test_align_collate = AlignCollate('test', ts.MEAN, ts.STD, ts.IMAGE_SIZE_HEIGHT, ts.IMAGE_SIZE_WIDTH,
+                                  ts.ANNOTATION_SIZE_HEIGHT, ts.ANNOTATION_SIZE_WIDTH,
+                                  ts.CROP_SCALE, ts.CROP_AR, random_cropping=ts.RANDOM_CROPPING,
+                                  horizontal_flipping=ts.HORIZONTAL_FLIPPING)
 assert test_dataset
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batchsize, shuffle=False,
                                           num_workers=opt.nworkers, pin_memory=pin_memory, collate_fn=test_align_collate)

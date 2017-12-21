@@ -54,26 +54,36 @@ class AlignCollate(object):
     """Should be a callable (https://docs.python.org/2/library/functions.html#callable), that gets a minibatch
     and returns minibatch."""
 
-    def __init__(self, mode, mean, std, image_size_height, image_size_width, annotation_size_height, annotation_size_width, crop_scale, crop_ar):
+    def __init__(self, mode, mean, std, image_size_height, image_size_width, annotation_size_height, annotation_size_width,
+                 crop_scale, crop_ar, random_cropping=True, horizontal_flipping=True):
 
         self._mode = mode
 
-        assert self._mode in ['training', 'validation', 'test']
+        assert self._mode in ['training', 'test']
 
         self.mean = mean
         self.std = std
         self.image_size_height = image_size_height
         self.image_size_width = image_size_width
+        self.random_cropping = random_cropping
         self.crop_scale = crop_scale
         self.crop_ar = crop_ar
         self.annotation_size_height = annotation_size_height
         self.annotation_size_width = annotation_size_width
+        self.horizontal_flipping = horizontal_flipping
 
         if self._mode == 'training':
-            self.image_random_cropper = ImageUtilities.image_random_cropper_and_resizer(self.image_size_height, self.image_size_width)
-            self.annotation_random_cropper = ImageUtilities.image_random_cropper_and_resizer(self.annotation_size_height, self.annotation_size_width,
-                                                                                             interpolation=Image.NEAREST)
-            self.horizontal_flipper = ImageUtilities.image_random_horizontal_flipper()
+            if self.random_cropping:
+                self.image_random_cropper = ImageUtilities.image_random_cropper_and_resizer(self.image_size_height, self.image_size_width)
+                self.annotation_random_cropper = ImageUtilities.image_random_cropper_and_resizer(self.annotation_size_height,
+                                                                                                 self.annotation_size_width,
+                                                                                                 interpolation=Image.NEAREST)
+            else:
+                self.image_resizer = ImageUtilities.image_resizer(self.image_size_height, self.image_size_width)
+                self.annotation_resizer = ImageUtilities.image_resizer(self.annotation_size_height, self.annotation_size_width,
+                                                                       interpolation=Image.NEAREST)
+            if self.horizontal_flipping:
+                self.horizontal_flipper = ImageUtilities.image_random_horizontal_flipper()
         else:
             self.image_resizer = ImageUtilities.image_resizer(self.image_size_height, self.image_size_width)
             self.annotation_resizer = ImageUtilities.image_resizer(self.annotation_size_height, self.annotation_size_width,
@@ -84,14 +94,18 @@ class AlignCollate(object):
     def __preprocess(self, image, annotation):
 
         if self._mode == 'training':
-            crop_params = self.image_random_cropper.get_params(image, scale=self.crop_scale, ratio=self.crop_ar)
-            is_flip = random.random() < 0.5
+            if self.random_cropping:
+                crop_params = self.image_random_cropper.get_params(image, scale=self.crop_scale, ratio=self.crop_ar)
+                image = self.image_random_cropper(image, crop_params)
+                annotation = self.annotation_random_cropper(annotation, crop_params)
+            else:
+                image = self.image_resizer(image)
+                annotation = self.annotation_resizer(annotation)
 
-            image = self.image_random_cropper(image, crop_params)
-            annotation = self.annotation_random_cropper(annotation, crop_params)
-
-            image = self.horizontal_flipper(image, is_flip)
-            annotation = self.horizontal_flipper(annotation, is_flip)
+            if self.horizontal_flipping:
+                is_flip = random.random() < 0.5
+                image = self.horizontal_flipper(image, is_flip)
+                annotation = self.horizontal_flipper(annotation, is_flip)
         else:
             image = self.image_resizer(image)
             annotation = self.annotation_resizer(annotation)            
