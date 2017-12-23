@@ -49,7 +49,7 @@ if opt.usegpu:
     pin_memory = True
 
 train_dataset = SegDataset(ts.TRAINING_LMDB)
-train_align_collate = AlignCollate('training', ts.MEAN, ts.STD, ts.IMAGE_SIZE_HEIGHT, ts.IMAGE_SIZE_WIDTH,
+train_align_collate = AlignCollate('training', ts.N_CLASSES, ts.MEAN, ts.STD, ts.IMAGE_SIZE_HEIGHT, ts.IMAGE_SIZE_WIDTH,
                                    ts.ANNOTATION_SIZE_HEIGHT, ts.ANNOTATION_SIZE_WIDTH,
                                    ts.CROP_SCALE, ts.CROP_AR, random_cropping=ts.RANDOM_CROPPING,
                                    horizontal_flipping=ts.HORIZONTAL_FLIPPING)
@@ -58,7 +58,7 @@ train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=opt.batchsi
                                            num_workers=opt.nworkers, pin_memory=pin_memory, collate_fn=train_align_collate)
 
 test_dataset = SegDataset(ts.VALIDATION_LMDB)
-test_align_collate = AlignCollate('test', ts.MEAN, ts.STD, ts.IMAGE_SIZE_HEIGHT, ts.IMAGE_SIZE_WIDTH,
+test_align_collate = AlignCollate('test', ts.N_CLASSES, ts.MEAN, ts.STD, ts.IMAGE_SIZE_HEIGHT, ts.IMAGE_SIZE_WIDTH,
                                   ts.ANNOTATION_SIZE_HEIGHT, ts.ANNOTATION_SIZE_WIDTH,
                                   ts.CROP_SCALE, ts.CROP_AR, random_cropping=ts.RANDOM_CROPPING,
                                   horizontal_flipping=ts.HORIZONTAL_FLIPPING)
@@ -67,7 +67,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batchsize
                                           num_workers=opt.nworkers, pin_memory=pin_memory, collate_fn=test_align_collate)
 
 # Define Model
-model = Model(ts.N_CLASSES, load_model_path=opt.model, usegpu=opt.usegpu)
+model = Model(ts.N_CLASSES, criterion_type=ts.CRITERION, load_model_path=opt.model, usegpu=opt.usegpu)
 
 # Train Model
 model.fit(ts.LEARNING_RATE, ts.WEIGHT_DECAY, ts.CLIP_GRAD_NORM, ts.LR_DROP_FACTOR, ts.LR_DROP_PATIENCE, ts.OPTIMIZER,

@@ -8,12 +8,14 @@ import numpy as np
 from itertools import ifilter
 
 from arch import Architecture
+from dice import DiceLoss
 
 class Model(object):
 
-    def __init__(self, n_classes, load_model_path='', usegpu=True):
+    def __init__(self, n_classes, criterion_type='CE', load_model_path='', usegpu=True):
 
         self.n_classes = n_classes
+        self.criterion_type = criterion_type
         self.load_model_path = load_model_path
         self.usegpu = usegpu
 
@@ -73,12 +75,20 @@ class Model(object):
 
         return features_var, labels_var
 
-    def __define_criterion(self, class_weights):
+    def __define_criterion(self, class_weights, criterion='CE'):
+        assert criterion in ['CE', 'Dice']
+
         if type(class_weights) != type(None):
-            class_weights = torch.FloatTensor(class_weights)
-            self.criterion = torch.nn.CrossEntropyLoss(class_weights)
+            class_weights = self.__define_variable(torch.FloatTensor(class_weights))
+            if criterion == 'CE':
+                self.criterion = torch.nn.CrossEntropyLoss(class_weights)
+            elif criterion == 'Dice':
+                self.criterion = DiceLoss(weight=class_weights, smooth=1.0)
         else:
-            self.criterion = torch.nn.CrossEntropyLoss()
+            if criterion == 'CE':
+                self.criterion = torch.nn.CrossEntropyLoss()
+            elif criterion == 'Dice':
+                self.criterion = DiceLoss(smooth=1.0)
 
         if self.usegpu:
             self.criterion = self.criterion.cuda()
@@ -97,7 +107,7 @@ class Model(object):
         elif optimizer == 'SGD':
             self.optimizer = optim.SGD(parameters, lr=learning_rate, momentum=0.9, weight_decay=weight_decay)
 
-        self.lr_scheduler = ReduceLROnPlateau(self.optimizer, mode='max', factor=lr_drop_factor, patience=lr_drop_patience, verbose=True)
+        self.lr_scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=lr_drop_factor, patience=lr_drop_patience, verbose=True)
 
     @staticmethod
     def __get_loss_averager():
@@ -136,7 +146,12 @@ class Model(object):
 
         predictions = self.model(gpu_images)
 
-        cost = self.criterion(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes), gpu_annotations.view(-1))
+        if self.criterion_type == 'CE':
+            _, gpu_annotations_criterion = gpu_annotations.max(3)
+            cost = self.criterion(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes), gpu_annotations_criterion.view(-1))
+        elif self.criterion_type == 'Dice':
+            gpu_annotations_criterion = gpu_annotations.permute(0, 3, 1, 2).contiguous()
+            cost = self.criterion(predictions, gpu_annotations_criterion)
 
         if mode == 'training':
             self.model.zero_grad()
@@ -160,6 +175,8 @@ class Model(object):
             test_loss_averager.add(cost)
 
             _, predictions = predictions.max(1)
+            _, cpu_annotations = cpu_annotations.max(3)
+
             n_correct += torch.sum(predictions.data.cpu() == cpu_annotations)
             n_total += predictions.numel()
 
@@ -181,7 +198,7 @@ class Model(object):
 
         train_loss_averager = Model.__get_loss_averager()
 
-        self.__define_criterion(class_weights)
+        self.__define_criterion(class_weights, criterion=self.criterion_type)
         self.__define_optimizer(learning_rate, weight_decay, lr_drop_factor, lr_drop_patience, optimizer=optimizer)
 
         self.__test(test_loader)
@@ -200,6 +217,7 @@ class Model(object):
                                                                                                     train_cnn=train_cnn, mode='training')
 
                 _, minibatch_predictions = minibatch_predictions.max(1)
+                _, minibatch_cpu_annotations = minibatch_cpu_annotations.max(3)
                 train_n_correct += torch.sum(minibatch_predictions.data.cpu() == minibatch_cpu_annotations)
                 train_n_total += minibatch_predictions.numel()
 
@@ -217,7 +235,7 @@ class Model(object):
 
             val_accuracy, val_loss = self.__test(test_loader)
 
-            self.lr_scheduler.step(val_accuracy)
+            self.lr_scheduler.step(val_loss)
 
             is_best_model_loss = val_loss <= best_val_loss
             is_best_model_acc = val_accuracy >= best_val_acc
@@ -243,7 +261,7 @@ class Model(object):
 
     def test(self, class_weights, test_loader):
 
-        self.__define_criterion(class_weights)
+        self.__define_criterion(class_weights, criterion=self.criterion_type)
         test_accuracy, test_loss = self.__test(test_loader)
 
         return test_accuracy, test_loss

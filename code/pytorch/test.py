@@ -28,7 +28,7 @@ if opt.usegpu:
     pin_memory = True
 
 test_dataset = SegDataset(opt.lmdb)
-test_align_collate = AlignCollate('test', ms.MEAN, ms.STD, ms.IMAGE_SIZE_HEIGHT, ms.IMAGE_SIZE_WIDTH,
+test_align_collate = AlignCollate('test', ms.N_CLASSES, ms.MEAN, ms.STD, ms.IMAGE_SIZE_HEIGHT, ms.IMAGE_SIZE_WIDTH,
                                   ms.ANNOTATION_SIZE_HEIGHT, ms.ANNOTATION_SIZE_WIDTH, ms.CROP_SCALE, ms.CROP_AR,
                                   random_cropping=ms.RANDOM_CROPPING, horizontal_flipping=ms.HORIZONTAL_FLIPPING)
 assert test_dataset
@@ -36,7 +36,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batchsize
                                           num_workers=opt.nworkers, pin_memory=pin_memory, collate_fn=test_align_collate)
 
 # Define Model
-model = Model(ms.N_CLASSES, load_model_path=model_path, usegpu=opt.usegpu)
+model = Model(ms.N_CLASSES, criterion_type=ts.CRITERION, load_model_path=model_path, usegpu=opt.usegpu)
 
 # Test Model
 test_accuracy, test_loss = model.test(ms.CLASS_WEIGHTS, test_loader)

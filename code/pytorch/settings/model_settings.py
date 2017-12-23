@@ -14,6 +14,8 @@ class ModelSettings(DataSettings):
         self.ANNOTATION_SIZE_HEIGHT = 824
         self.ANNOTATION_SIZE_WIDTH = 548
 
+        self.CRITERION = 'Dice'
+
         self.HORIZONTAL_FLIPPING = True
         self.RANDOM_CROPPING = True       # CROP_SCALE and CROP_AR is used iff self.RANDOM_CROPPING is True
         self.CROP_SCALE = (0.8, 1.0)      # Choose it carefully - have a look at lib/preprocess.py -> RandomResizedCrop

@@ -54,13 +54,14 @@ class AlignCollate(object):
     """Should be a callable (https://docs.python.org/2/library/functions.html#callable), that gets a minibatch
     and returns minibatch."""
 
-    def __init__(self, mode, mean, std, image_size_height, image_size_width, annotation_size_height, annotation_size_width,
+    def __init__(self, mode, n_classes, mean, std, image_size_height, image_size_width, annotation_size_height, annotation_size_width,
                  crop_scale, crop_ar, random_cropping=True, horizontal_flipping=True):
 
         self._mode = mode
 
         assert self._mode in ['training', 'test']
 
+        self.n_classes = n_classes
         self.mean = mean
         self.std = std
         self.image_size_height = image_size_height
@@ -127,7 +128,11 @@ class AlignCollate(object):
             annotations[i] = annotation
 
         images = torch.stack(images)
-        annotations = np.array(annotations, dtype='int')
-        annotations = torch.LongTensor(annotations)
 
-        return images, annotations
+        annotations = np.array(annotations, dtype='int')
+        annotations_one_hot = np.eye(self.n_classes, dtype='int')
+        annotations_one_hot = annotations_one_hot[annotations.flatten()].reshape(annotations.shape[0], annotations.shape[1],
+                                                                                 annotations.shape[2], self.n_classes)
+        annotations_one_hot = torch.LongTensor(annotations_one_hot)
+
+        return images, annotations_one_hot
