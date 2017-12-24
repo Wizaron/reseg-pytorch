@@ -82,10 +82,7 @@ class Model(object):
 
         if type(criterion) == type(None):
             self.criterion_dice_coeff = DiceCoefficient(smooth=smooth)
-
-            if self.usegpu:
-                self.criterion_dice_coeff = self.criterion_dice_coeff.cuda()
-                return
+            return
 
         if type(class_weights) != type(None):
             class_weights = self.__define_variable(torch.FloatTensor(class_weights))
@@ -115,8 +112,6 @@ class Model(object):
             elif criterion == 'Multi':
                 self.criterion_ce = self.criterion_ce.cuda()
                 self.criterion_dice = self.criterion_dice.cuda()
-
-            self.criterion_dice_coeff = self.criterion_dice_coeff.cuda()
 
     def __define_optimizer(self, learning_rate, weight_decay, lr_drop_factor, lr_drop_patience, optimizer='Adam'):
         assert optimizer in ['RMSprop', 'Adam', 'Adadelta', 'SGD']
