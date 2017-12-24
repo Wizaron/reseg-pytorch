@@ -220,11 +220,14 @@ class Model(object):
 
         accuracy = n_correct / n_total
 
-        print 'Test Accuracy: {}'.format(accuracy)
-        print 'Dice Coefficients:'
+        dice_coefficients_str = ''
         for i, coeff in enumerate(dice_coefficients):
-            label_name = self.labels[np.where(self.labels[:, 0].astype('int') == i)[0][0]][1]
-            print '* {} : {}'.format(label_name, coeff)
+            label_name = self.labels[self.labels[:, 0].astype('int') == i][0, 1]
+            dice_coefficients_str += '/    {} : {}   /'.format(label_name, coeff)
+
+        print 'Accuracy: {}'.format(accuracy)
+        print 'Dice Coefficients:'
+        print dice_coefficients_str
 
         mean_dice_coeff = dice_coefficients[1:].mean() # Discard bg class when calculating mean
 
