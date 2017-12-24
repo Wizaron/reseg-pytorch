@@ -25,7 +25,7 @@ from settings import ModelSettings
 
 ms = ModelSettings()
 
-model = Model(ms.N_CLASSES, load_model_path=model_path, usegpu=opt.usegpu)
+model = Model(ms.LABELS, load_model_path=model_path, usegpu=opt.usegpu)
 prediction = Prediction(ms.IMAGE_SIZE_HEIGHT, ms.IMAGE_SIZE_WIDTH, ms.MEAN, ms.STD, model)
 image, pred = prediction.predict(image_path)
 

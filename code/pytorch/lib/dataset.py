@@ -54,14 +54,14 @@ class AlignCollate(object):
     """Should be a callable (https://docs.python.org/2/library/functions.html#callable), that gets a minibatch
     and returns minibatch."""
 
-    def __init__(self, mode, n_classes, mean, std, image_size_height, image_size_width, annotation_size_height, annotation_size_width,
+    def __init__(self, mode, labels, mean, std, image_size_height, image_size_width, annotation_size_height, annotation_size_width,
                  crop_scale, crop_ar, random_cropping=True, horizontal_flipping=True):
 
         self._mode = mode
 
         assert self._mode in ['training', 'test']
 
-        self.n_classes = n_classes
+        self.n_classes = len(labels)
         self.mean = mean
         self.std = std
         self.image_size_height = image_size_height

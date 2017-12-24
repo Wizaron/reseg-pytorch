@@ -11,4 +11,3 @@ class DataSettings(object):
         #                                dtype='float', delimiter=',')[:, 1]
         self.CLASS_WEIGHTS = None
         # Assign it to None in order to disable class weighting
-        self.N_CLASSES = len(self.LABELS)
