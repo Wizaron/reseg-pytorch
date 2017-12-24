@@ -78,17 +78,18 @@ class DiceLoss(_WeightedLoss):
         return dice_loss(input, target, weight=self.weight, smooth=self.smooth, size_average=self.size_average,
                          reduce=self.reduce)
 
-class DiceCoefficient(object):
+class DiceCoefficient(torch.nn.Module):
 
     def __init__(self, smooth=1.0):
         """input is a torch variable of size BatchxnclassesxHxW representing log probabilities for each class
         target is a 1-hot representation of the groundtruth, shoud have same size as the input"""
+        super(DiceCoefficient, self).__init__()
 
         self.smooth = smooth
 
     def forward(self, input, target):
         _assert_no_grad(target)
-        return dice_coefficient(input, target, smooth=smooth)
+        return dice_coefficient(input, target, smooth=self.smooth)
 
 if __name__ == '__main__':
     from torch.autograd import Variable
