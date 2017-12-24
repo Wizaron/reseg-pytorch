@@ -12,9 +12,10 @@ from dice import DiceLoss, DiceCoefficient
 
 class Model(object):
 
-    def __init__(self, n_classes, load_model_path='', usegpu=True):
+    def __init__(self, labels, load_model_path='', usegpu=True):
 
-        self.n_classes = n_classes
+        self.labels = labels
+        self.n_classes = len(labels)
         self.load_model_path = load_model_path
         self.usegpu = usegpu
 
@@ -227,7 +228,8 @@ class Model(object):
         print 'Test Accuracy: {}'.format(accuracy)
         print 'Dice Coefficients:'
         for i, coeff in enumerate(dice_coefficients):
-            print '* Class {} : {}'.format(i, coeff)
+            label_name = self.labels[np.where(self.labels[:, 0].astype('int') == i)[0][0]][1]
+            print '* {} : {}'.format(label_name, coeff)
 
         mean_dice_coeff = dice_coefficients[1:].mean() # Discard bg class when calculating mean
 
