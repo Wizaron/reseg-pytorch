@@ -67,8 +67,8 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batchsize
                                           num_workers=opt.nworkers, pin_memory=pin_memory, collate_fn=test_align_collate)
 
 # Define Model
-model = Model(ts.N_CLASSES, criterion_type=ts.CRITERION, load_model_path=opt.model, usegpu=opt.usegpu)
+model = Model(ts.N_CLASSES, load_model_path=opt.model, usegpu=opt.usegpu)
 
 # Train Model
-model.fit(ts.LEARNING_RATE, ts.WEIGHT_DECAY, ts.CLIP_GRAD_NORM, ts.LR_DROP_FACTOR, ts.LR_DROP_PATIENCE, ts.OPTIMIZER,
+model.fit(ts.CRITERION, ts.LEARNING_RATE, ts.WEIGHT_DECAY, ts.CLIP_GRAD_NORM, ts.LR_DROP_FACTOR, ts.LR_DROP_PATIENCE, ts.OPTIMIZER,
           ts.TRAIN_CNN, opt.nepochs, ts.CLASS_WEIGHTS, train_loader, test_loader, model_save_path)

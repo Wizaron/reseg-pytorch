@@ -8,7 +8,7 @@ import numpy as np
 from itertools import ifilter
 
 from arch import Architecture
-from dice import DiceLoss
+from dice import DiceLoss, DiceCoefficient
 
 class Model(object):
 
@@ -75,9 +75,16 @@ class Model(object):
         return features_var, labels_var
 
     def __define_criterion(self, class_weights, criterion='CE'):
-        assert criterion in ['CE', 'Dice', 'Multi']
+        assert criterion in ['CE', 'Dice', 'Multi', None]
 
         smooth = 1.0
+
+        if type(criterion) == type(None):
+            self.criterion_dice_coeff = DiceCoefficient(smooth=smooth)
+
+            if self.usegpu:
+                self.criterion_dice_coeff = self.criterion_dice_coeff.cuda()
+                return
 
         if type(class_weights) != type(None):
             class_weights = self.__define_variable(torch.FloatTensor(class_weights))
@@ -97,6 +104,8 @@ class Model(object):
                 self.criterion_ce = torch.nn.CrossEntropyLoss()
                 self.criterion_dice = DiceLoss(smooth=smooth)
 
+        self.criterion_dice_coeff = DiceCoefficient(smooth=smooth)
+
         if self.usegpu:
             if criterion == 'CE':
                 self.criterion_ce = self.criterion_ce.cuda()
@@ -105,6 +114,8 @@ class Model(object):
             elif criterion == 'Multi':
                 self.criterion_ce = self.criterion_ce.cuda()
                 self.criterion_dice = self.criterion_dice.cuda()
+
+            self.criterion_dice_coeff = self.criterion_dice_coeff.cuda()
 
     def __define_optimizer(self, learning_rate, weight_decay, lr_drop_factor, lr_drop_patience, optimizer='Adam'):
         assert optimizer in ['RMSprop', 'Adam', 'Adadelta', 'SGD']
@@ -120,7 +131,7 @@ class Model(object):
         elif optimizer == 'SGD':
             self.optimizer = optim.SGD(parameters, lr=learning_rate, momentum=0.9, weight_decay=weight_decay)
 
-        self.lr_scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=lr_drop_factor, patience=lr_drop_patience, verbose=True)
+        self.lr_scheduler = ReduceLROnPlateau(self.optimizer, mode='max', factor=lr_drop_factor, patience=lr_drop_patience, verbose=True)
 
     @staticmethod
     def __get_loss_averager():
@@ -159,18 +170,24 @@ class Model(object):
 
         predictions = self.model(gpu_images)
 
-        if criterion_type == 'CE':
-            _, gpu_annotations_criterion_ce = gpu_annotations.max(3)
-            cost = self.criterion_ce(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes), gpu_annotations_criterion_ce.view(-1))
-        elif criterion_type == 'Dice':
+        if mode == 'training':
+            if criterion_type == 'CE':
+                _, gpu_annotations_criterion_ce = gpu_annotations.max(3)
+                cost = self.criterion_ce(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes),
+                                         gpu_annotations_criterion_ce.view(-1))
+            elif criterion_type == 'Dice':
+                gpu_annotations_criterion_dice = gpu_annotations.permute(0, 3, 1, 2).contiguous()
+                cost = self.criterion_dice(predictions, gpu_annotations_criterion_dice)
+            elif criterion_type == 'Multi':
+                _, gpu_annotations_criterion_ce = gpu_annotations.max(3)
+                cost_ce = self.criterion_ce(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes),
+                                            gpu_annotations_criterion_ce.view(-1))
+                gpu_annotations_criterion_dice = gpu_annotations.permute(0, 3, 1, 2).contiguous()
+                cost_dice = self.criterion_dice(predictions, gpu_annotations_criterion_dice)
+                cost = cost_ce + cost_dice
+        else:
             gpu_annotations_criterion_dice = gpu_annotations.permute(0, 3, 1, 2).contiguous()
-            cost = self.criterion_dice(predictions, gpu_annotations_criterion_dice)
-        elif criterion_type == 'Multi':
-            _, gpu_annotations_criterion_ce = gpu_annotations.max(3)
-            cost_ce = self.criterion_ce(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes), gpu_annotations_criterion_ce.view(-1))
-            gpu_annotations_criterion_dice = gpu_annotations.permute(0, 3, 1, 2).contiguous()
-            cost_dice = self.criterion_dice(predictions, gpu_annotations_criterion_dice)
-            cost = cost_ce + cost_dice
+            cost = self.criterion_dice_coeff(predictions, gpu_annotations_criterion_dice)
 
         if mode == 'training':
             self.model.zero_grad()
@@ -181,30 +198,40 @@ class Model(object):
 
         return cost, predictions, cpu_annotations
 
-    def __test(self, criterion_type, test_loader):
-        n_minibatches = len(test_loader)
+    def __test(self, test_loader):
 
-        test_loss_averager = Model.__get_loss_averager()
+        print '***** Testing *****'
+
+        n_minibatches = len(test_loader)
 
         test_iter = iter(test_loader)
         n_correct, n_total = 0.0, 0.0
+        dice_coefficients = []
 
         for minibatch_index in range(n_minibatches):
-            cost, predictions, cpu_annotations = self.__minibatch(test_iter, 0.0, criterion_type, False, mode='test')
-            test_loss_averager.add(cost)
+            dice_coeff, predictions, cpu_annotations = self.__minibatch(test_iter, 0.0, None, False, mode='test')
 
             _, predictions = predictions.max(1)
             _, cpu_annotations = cpu_annotations.max(3)
+            dice_coeff = dice_coeff.data
 
             n_correct += torch.sum(predictions.data.cpu() == cpu_annotations)
             n_total += predictions.numel()
 
-        loss = test_loss_averager.val()
+            dice_coefficients.extend(dice_coeff)
+
+        dice_coefficients = torch.stack(dice_coefficients, dim=0).mean(dim=0)
+
         accuracy = n_correct / n_total
 
-        print 'Test Loss: {}, Accuracy: {}'.format(loss, accuracy)
+        print 'Test Accuracy: {}'.format(accuracy)
+        print 'Dice Coefficients:'
+        for i, coeff in enumerate(dice_coefficients):
+            print '* Class {} : {}'.format(i, coeff)
 
-        return accuracy, loss
+        mean_dice_coeff = dice_coefficients[1:].mean() # Discard bg class when calculating mean
+
+        return accuracy, mean_dice_coeff
 
     def fit(self, criterion_type, learning_rate, weight_decay, clip_grad_norm, lr_drop_factor, lr_drop_patience, optimizer,
             train_cnn, n_epochs, class_weights, train_loader, test_loader, model_save_path):
@@ -213,16 +240,16 @@ class Model(object):
         validation_log_file = open(os.path.join(model_save_path, 'validation.log'), 'w')
 
         training_log_file.write('Epoch,Loss,Accuracy\n')
-        validation_log_file.write('Epoch,Loss,Accuracy\n')
+        validation_log_file.write('Epoch,DiceCoefficient,Accuracy\n')
 
         train_loss_averager = Model.__get_loss_averager()
 
         self.__define_criterion(class_weights, criterion=criterion_type)
         self.__define_optimizer(learning_rate, weight_decay, lr_drop_factor, lr_drop_patience, optimizer=optimizer)
 
-        self.__test(criterion_type, test_loader)
+        self.__test(test_loader)
 
-        best_val_loss, best_val_acc = np.Inf, 0.0
+        best_val_dice_coeff, best_val_acc = 0.0, 0.0
         for epoch in range(n_epochs):
             epoch_start = time.time()
 
@@ -252,23 +279,23 @@ class Model(object):
             print '[{}] [{}/{}] Loss : {} - Accuracy : {}'.format(epoch_duration, epoch, n_epochs, train_loss,
                                                                   train_accuracy)
 
-            val_accuracy, val_loss = self.__test(criterion_type, test_loader)
+            val_accuracy, val_dice_coeff = self.__test(test_loader)
 
-            self.lr_scheduler.step(val_loss)
+            self.lr_scheduler.step(val_dice_coeff)
 
-            is_best_model_loss = val_loss <= best_val_loss
+            is_best_model_dice_coeff = val_dice_coeff >= best_val_dice_coeff
             is_best_model_acc = val_accuracy >= best_val_acc
-            is_best_model = is_best_model_loss or is_best_model_acc
+            is_best_model = is_best_model_dice_coeff or is_best_model_acc
 
             if is_best_model:
-                if is_best_model_loss:
-                    best_val_loss = val_loss
+                if is_best_model_dice_coeff:
+                    best_val_dice_coeff = val_dice_coeff
                 if is_best_model_acc:
                     best_val_acc = val_accuracy
-                torch.save(self.model.state_dict(), os.path.join(model_save_path, 'model_{}_{}_{}.pth'.format(epoch, val_loss, val_accuracy)))
+                torch.save(self.model.state_dict(), os.path.join(model_save_path, 'model_{}_{}_{}.pth'.format(epoch, val_dice_coeff, val_accuracy)))
 
             training_log_file.write('{},{},{}\n'.format(epoch, train_loss, train_accuracy))
-            validation_log_file.write('{},{},{}\n'.format(epoch, val_loss, val_accuracy))
+            validation_log_file.write('{},{},{}\n'.format(epoch, val_dice_coeff, val_accuracy))
             training_log_file.flush()
             validation_log_file.flush()
 
@@ -278,12 +305,12 @@ class Model(object):
         training_log_file.close()
         validation_log_file.close()
 
-    def test(self, criterion_type, class_weights, test_loader):
+    def test(self, class_weights, test_loader):
 
-        self.__define_criterion(class_weights, criterion=criterion_type)
-        test_accuracy, test_loss = self.__test(criterion_type, test_loader)
+        self.__define_criterion(class_weights, criterion=None)
+        test_accuracy, test_dice_coeff = self.__test(test_loader)
 
-        return test_accuracy, test_loss
+        return test_accuracy, test_dice_coeff
 
     def predict(self, images):
 

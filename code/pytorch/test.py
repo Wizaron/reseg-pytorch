@@ -36,7 +36,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batchsize
                                           num_workers=opt.nworkers, pin_memory=pin_memory, collate_fn=test_align_collate)
 
 # Define Model
-model = Model(ms.N_CLASSES, criterion_type=ts.CRITERION, load_model_path=model_path, usegpu=opt.usegpu)
+model = Model(ms.N_CLASSES, load_model_path=model_path, usegpu=opt.usegpu)
 
 # Test Model
 test_accuracy, test_loss = model.test(ms.CLASS_WEIGHTS, test_loader)
