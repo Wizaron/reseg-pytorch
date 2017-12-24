@@ -14,7 +14,7 @@ class ModelSettings(DataSettings):
         self.ANNOTATION_SIZE_HEIGHT = 824
         self.ANNOTATION_SIZE_WIDTH = 548
 
-        self.CRITERION = 'Dice'
+        self.CRITERION = 'Dice'           # One of 'CE', 'Dice', 'Multi'
 
         self.HORIZONTAL_FLIPPING = True
         self.RANDOM_CROPPING = True       # CROP_SCALE and CROP_AR is used iff self.RANDOM_CROPPING is True

@@ -12,10 +12,9 @@ from dice import DiceLoss
 
 class Model(object):
 
-    def __init__(self, n_classes, criterion_type='CE', load_model_path='', usegpu=True):
+    def __init__(self, n_classes, load_model_path='', usegpu=True):
 
         self.n_classes = n_classes
-        self.criterion_type = criterion_type
         self.load_model_path = load_model_path
         self.usegpu = usegpu
 
@@ -76,22 +75,36 @@ class Model(object):
         return features_var, labels_var
 
     def __define_criterion(self, class_weights, criterion='CE'):
-        assert criterion in ['CE', 'Dice']
+        assert criterion in ['CE', 'Dice', 'Multi']
+
+        smooth = 1.0
 
         if type(class_weights) != type(None):
             class_weights = self.__define_variable(torch.FloatTensor(class_weights))
             if criterion == 'CE':
-                self.criterion = torch.nn.CrossEntropyLoss(class_weights)
+                self.criterion_ce = torch.nn.CrossEntropyLoss(class_weights)
             elif criterion == 'Dice':
-                self.criterion = DiceLoss(weight=class_weights, smooth=1.0)
+                self.criterion_dice = DiceLoss(weight=class_weights, smooth=smooth)
+            elif criterion == 'Multi':
+                self.criterion_ce = torch.nn.CrossEntropyLoss(class_weights)
+                self.criterion_dice = DiceLoss(weight=class_weights, smooth=smooth)
         else:
             if criterion == 'CE':
-                self.criterion = torch.nn.CrossEntropyLoss()
+                self.criterion_ce = torch.nn.CrossEntropyLoss()
             elif criterion == 'Dice':
-                self.criterion = DiceLoss(smooth=1.0)
+                self.criterion_dice = DiceLoss(smooth=smooth)
+            elif criterion == 'Multi':
+                self.criterion_ce = torch.nn.CrossEntropyLoss()
+                self.criterion_dice = DiceLoss(smooth=smooth)
 
         if self.usegpu:
-            self.criterion = self.criterion.cuda()
+            if criterion == 'CE':
+                self.criterion_ce = self.criterion_ce.cuda()
+            elif criterion == 'Dice':
+                self.criterion_dice = self.criterion_dice.cuda()
+            elif criterion == 'Multi':
+                self.criterion_ce = self.criterion_ce.cuda()
+                self.criterion_dice = self.criterion_dice.cuda()
 
     def __define_optimizer(self, learning_rate, weight_decay, lr_drop_factor, lr_drop_patience, optimizer='Adam'):
         assert optimizer in ['RMSprop', 'Adam', 'Adadelta', 'SGD']
@@ -113,7 +126,7 @@ class Model(object):
     def __get_loss_averager():
         return averager()
 
-    def __minibatch(self, train_test_iter, clip_grad_norm, train_cnn=True, mode='training'):
+    def __minibatch(self, train_test_iter, clip_grad_norm, criterion_type, train_cnn=True, mode='training'):
         assert mode in ['training', 'test'], 'Mode must be either "training" or "test"'
 
         if mode == 'training':
@@ -146,12 +159,18 @@ class Model(object):
 
         predictions = self.model(gpu_images)
 
-        if self.criterion_type == 'CE':
-            _, gpu_annotations_criterion = gpu_annotations.max(3)
-            cost = self.criterion(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes), gpu_annotations_criterion.view(-1))
-        elif self.criterion_type == 'Dice':
-            gpu_annotations_criterion = gpu_annotations.permute(0, 3, 1, 2).contiguous()
-            cost = self.criterion(predictions, gpu_annotations_criterion)
+        if criterion_type == 'CE':
+            _, gpu_annotations_criterion_ce = gpu_annotations.max(3)
+            cost = self.criterion_ce(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes), gpu_annotations_criterion_ce.view(-1))
+        elif criterion_type == 'Dice':
+            gpu_annotations_criterion_dice = gpu_annotations.permute(0, 3, 1, 2).contiguous()
+            cost = self.criterion_dice(predictions, gpu_annotations_criterion_dice)
+        elif criterion_type == 'Multi':
+            _, gpu_annotations_criterion_ce = gpu_annotations.max(3)
+            cost_ce = self.criterion_ce(predictions.permute(0, 2, 3, 1).contiguous().view(-1, self.n_classes), gpu_annotations_criterion_ce.view(-1))
+            gpu_annotations_criterion_dice = gpu_annotations.permute(0, 3, 1, 2).contiguous()
+            cost_dice = self.criterion_dice(predictions, gpu_annotations_criterion_dice)
+            cost = cost_ce + cost_dice
 
         if mode == 'training':
             self.model.zero_grad()
@@ -162,7 +181,7 @@ class Model(object):
 
         return cost, predictions, cpu_annotations
 
-    def __test(self, test_loader):
+    def __test(self, criterion_type, test_loader):
         n_minibatches = len(test_loader)
 
         test_loss_averager = Model.__get_loss_averager()
@@ -171,7 +190,7 @@ class Model(object):
         n_correct, n_total = 0.0, 0.0
 
         for minibatch_index in range(n_minibatches):
-            cost, predictions, cpu_annotations = self.__minibatch(test_iter, 0.0, False, mode='test')
+            cost, predictions, cpu_annotations = self.__minibatch(test_iter, 0.0, criterion_type, False, mode='test')
             test_loss_averager.add(cost)
 
             _, predictions = predictions.max(1)
@@ -187,7 +206,7 @@ class Model(object):
 
         return accuracy, loss
 
-    def fit(self, learning_rate, weight_decay, clip_grad_norm, lr_drop_factor, lr_drop_patience, optimizer,
+    def fit(self, criterion_type, learning_rate, weight_decay, clip_grad_norm, lr_drop_factor, lr_drop_patience, optimizer,
             train_cnn, n_epochs, class_weights, train_loader, test_loader, model_save_path):
 
         training_log_file = open(os.path.join(model_save_path, 'training.log'), 'w')
@@ -198,10 +217,10 @@ class Model(object):
 
         train_loss_averager = Model.__get_loss_averager()
 
-        self.__define_criterion(class_weights, criterion=self.criterion_type)
+        self.__define_criterion(class_weights, criterion=criterion_type)
         self.__define_optimizer(learning_rate, weight_decay, lr_drop_factor, lr_drop_patience, optimizer=optimizer)
 
-        self.__test(test_loader)
+        self.__test(criterion_type, test_loader)
 
         best_val_loss, best_val_acc = np.Inf, 0.0
         for epoch in range(n_epochs):
@@ -213,7 +232,7 @@ class Model(object):
             minibatch_index = 0
             train_n_correct, train_n_total = 0.0, 0.0
             while minibatch_index < n_minibatches:
-                minibatch_cost, minibatch_predictions, minibatch_cpu_annotations = self.__minibatch(train_iter, clip_grad_norm, 
+                minibatch_cost, minibatch_predictions, minibatch_cpu_annotations = self.__minibatch(train_iter, clip_grad_norm, criterion_type,
                                                                                                     train_cnn=train_cnn, mode='training')
 
                 _, minibatch_predictions = minibatch_predictions.max(1)
@@ -233,7 +252,7 @@ class Model(object):
             print '[{}] [{}/{}] Loss : {} - Accuracy : {}'.format(epoch_duration, epoch, n_epochs, train_loss,
                                                                   train_accuracy)
 
-            val_accuracy, val_loss = self.__test(test_loader)
+            val_accuracy, val_loss = self.__test(criterion_type, test_loader)
 
             self.lr_scheduler.step(val_loss)
 
@@ -259,10 +278,10 @@ class Model(object):
         training_log_file.close()
         validation_log_file.close()
 
-    def test(self, class_weights, test_loader):
+    def test(self, criterion_type, class_weights, test_loader):
 
-        self.__define_criterion(class_weights, criterion=self.criterion_type)
-        test_accuracy, test_loss = self.__test(test_loader)
+        self.__define_criterion(class_weights, criterion=criterion_type)
+        test_accuracy, test_loss = self.__test(criterion_type, test_loader)
 
         return test_accuracy, test_loss
 
