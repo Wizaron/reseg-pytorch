@@ -51,7 +51,10 @@ class Model(object):
             model_state_dict.update(pretrained_state_dict)
             self.model.load_state_dict(model_state_dict)"""
 
-            self.model.load_state_dict(torch.load(self.load_model_path))
+            if self.usegpu:
+                self.model.load_state_dict(torch.load(self.load_model_path))
+            else:
+                self.model.load_state_dict(torch.load(self.load_model_path, map_location=lambda storage, loc: storage))
 
             """if self.usegpu:
                 loaded_model = torch.load(self.load_model_path)
