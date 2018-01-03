@@ -83,8 +83,9 @@ class Model(object):
 
         smooth = 1.0
 
+        self.criterion_dice_coeff = DiceCoefficient(smooth=smooth)
+
         if type(criterion) == type(None):
-            self.criterion_dice_coeff = DiceCoefficient(smooth=smooth)
             return
 
         if type(class_weights) != type(None):
@@ -104,8 +105,6 @@ class Model(object):
             elif criterion == 'Multi':
                 self.criterion_ce = torch.nn.CrossEntropyLoss()
                 self.criterion_dice = DiceLoss(smooth=smooth)
-
-        self.criterion_dice_coeff = DiceCoefficient(smooth=smooth)
 
         if self.usegpu:
             if criterion == 'CE':
@@ -238,6 +237,8 @@ class Model(object):
 
     def fit(self, criterion_type, learning_rate, weight_decay, clip_grad_norm, lr_drop_factor, lr_drop_patience, optimizer,
             train_cnn, n_epochs, class_weights, train_loader, test_loader, model_save_path):
+
+        assert criterion_type in ['CE', 'Dice', 'Multi']
 
         training_log_file = open(os.path.join(model_save_path, 'training.log'), 'w')
         validation_log_file = open(os.path.join(model_save_path, 'validation.log'), 'w')
