@@ -1,77 +1,57 @@
 name: reseg-pytorch
 channels:
-- defaults
+  - pytorch
+  - defaults
 dependencies:
-- certifi=2016.2.28=py27_0
-- cffi=1.10.0=py27_0
-- cudatoolkit=8.0=3
-- cudnn=7.0.5=cuda8.0_0
-- freetype=2.5.5=2
-- intel-openmp=2018.0.0=hc7b2577_8
-- jbig=2.1=0
-- jpeg=8d=2
-- lcms=1.19=0
-- libffi=3.2.1=1
-- libgcc=5.2.0=0
-- libgcc-ng=7.2.0=h7cc24e2_2
-- libgfortran=3.0.0=1
-- libgfortran-ng=7.2.0=h9f7466a_2
-- libpng=1.6.30=1
-- libstdcxx-ng=7.2.0=h7a57d05_2
-- libtiff=4.0.6=2
-- mkl=2018.0.1=h19d6760_4
-- nccl=1.3.4=cuda8.0_1
-- numpy=1.13.3=py27hbcc08e0_0
-- openssl=1.0.2l=0
-- pil=1.1.7=py27_2
-- pillow=3.4.2=py27_0
-- pip=9.0.1=py27_1
-- pycparser=2.18=py27_0
-- python=2.7.13=0
-- pytorch=0.3.0=py27cuda8.0cudnn7.0_0
-- readline=6.2=2
-- scipy=1.0.0=py27hf5f0f52_0
-- setuptools=36.4.0=py27_1
-- six=1.10.0=py27_0
-- sqlite=3.13.0=0
-- tk=8.5.18=0
-- wheel=0.29.0=py27_0
-- xz=5.2.3=0
-- zlib=1.2.11=0
-- pip:
-  - backports.shutil-get-terminal-size==1.0.0
-  - convertdate==2.1.1
-  - dateparser==0.6.0
-  - decorator==4.1.2
-  - enum34==1.1.6
-  - ephem==3.7.6.0
-  - ipython==5.5.0
-  - ipython-genutils==0.2.0
-  - iso3166==0.8
-  - lmdb==0.93
-  - olefile==0.44
-  - pathlib==1.0.1
-  - pathlib2==2.3.0
-  - pexpect==4.3.1
-  - pickleshare==0.7.4
-  - prompt-toolkit==1.0.15
-  - ptyprocess==0.5.2
-  - pygments==2.2.0
-  - pylibdmtx==0.1.7
-  - python-dateutil==2.6.1
-  - pytz==2017.2
-  - pyyaml==3.12
-  - regex==2017.7.28
-  - ruamel.ordereddict==0.4.13
-  - ruamel.yaml==0.15.26
-  - scandir==1.6
-  - simplegeneric==0.8.1
-  - torch==0.3.0
-  - torchvision==0.2.0
-  - traitlets==4.3.2
-  - tzlocal==1.4
-  - umalqurra==0.2
-  - wcwidth==0.1.7
-  - xlrd==1.0.0
-prefix: /home/thales/miniconda2/envs/reseg-pytorch
-
+  - ca-certificates=2017.08.26=h1d4fec5_0
+  - certifi=2017.11.5=py27h71e7faf_0
+  - cffi=1.11.2=py27ha7929c6_0
+  - cudatoolkit=8.0=3
+  - freetype=2.8=hab7d2ae_1
+  - intel-openmp=2018.0.0=hc7b2577_8
+  - jpeg=9b=h024ee3a_2
+  - libedit=3.1=heed3624_0
+  - libffi=3.2.1=hd88cf55_4
+  - libgcc-ng=7.2.0=h7cc24e2_2
+  - libpng=1.6.32=hbd3595f_4
+  - libstdcxx-ng=7.2.0=h7a57d05_2
+  - libtiff=4.0.9=h28f6b97_0
+  - mkl=2018.0.1=h19d6760_4
+  - ncurses=6.0=h9df7e31_2
+  - numpy=1.13.3=py27hbcc08e0_0
+  - olefile=0.44=py27h4bd3e3c_0
+  - openssl=1.0.2n=hb7f436b_0
+  - pillow=4.3.0=py27h353bd0c_1
+  - pip=9.0.1=py27ha730c48_4
+  - pycparser=2.18=py27hefa08c5_1
+  - python=2.7.14=h1571d57_29
+  - readline=7.0=ha6073c6_4
+  - setuptools=36.5.0=py27h68b189e_0
+  - six=1.11.0=py27h5f960f1_1
+  - sqlite=3.20.1=hb898158_2
+  - tk=8.6.7=hc745277_3
+  - wheel=0.30.0=py27h2bc6bb2_1
+  - xz=5.2.3=h55aa19d_2
+  - zlib=1.2.11=ha838bed_2
+  - pytorch=0.3.0=py27_cuda8.0.61_cudnn7.0.3hf383a3f_4
+  - torchvision=0.2.0=py27hfb27419_1
+  - pip:
+    - convertdate==2.1.1
+    - dateparser==0.6.0
+    - enum34==1.1.6
+    - ephem==3.7.6.0
+    - iso3166==0.8
+    - lmdb==0.93
+    - pathlib==1.0.1
+    - pylibdmtx==0.1.7
+    - python-dateutil==2.6.1
+    - pytz==2017.2
+    - pyyaml==3.12
+    - ruamel.ordereddict==0.4.13
+    - ruamel.yaml==0.15.26
+    - scipy==0.19.1
+    - torch==0.3.0.post4
+    - tzlocal==1.4
+    - umalqurra==0.2
+    - xlrd==1.0.0
+prefix: /home/jcmaxwell/Libraries/miniconda2/envs/reseg-pytorch
