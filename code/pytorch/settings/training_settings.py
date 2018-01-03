@@ -18,6 +18,6 @@ class TrainingSettings(ModelSettings):
         self.WEIGHT_DECAY = 0.001      # use 0 to disable it
         self.CLIP_GRAD_NORM = 0.0      # max l2 norm of gradient of parameters - use 0 to disable it
 
-        self.CRITERION = 'Multi'      # One of 'CE', 'Dice', 'Multi'
+        self.CRITERION = 'CE'          # One of 'CE', 'Dice', 'Multi'
 
         self.SEED = 13
