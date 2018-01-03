@@ -15,7 +15,7 @@ def dice_coefficient(input, target, smooth=1.0):
     assert set(list(uniques)) <= set([0, 1]), 'Target must only contain zeros and ones.'
     assert smooth > 0, 'Smooth must be greater than 0.'
 
-    probs = F.softmax(input)
+    probs = F.softmax(input, dim=1)
     target_f = target.float()
 
     num = probs * target_f         # b, c, h, w -- p*g

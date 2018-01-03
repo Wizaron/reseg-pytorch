@@ -1,32 +1,36 @@
 name: reseg-pytorch
 channels:
-- soumith
 - defaults
 dependencies:
 - certifi=2016.2.28=py27_0
 - cffi=1.10.0=py27_0
 - cudatoolkit=8.0=3
-- cudnn=6.0.21=cuda8.0_0
+- cudnn=7.0.5=cuda8.0_0
 - freetype=2.5.5=2
+- intel-openmp=2018.0.0=hc7b2577_8
 - jbig=2.1=0
 - jpeg=8d=2
 - lcms=1.19=0
 - libffi=3.2.1=1
 - libgcc=5.2.0=0
+- libgcc-ng=7.2.0=h7cc24e2_2
 - libgfortran=3.0.0=1
+- libgfortran-ng=7.2.0=h9f7466a_2
 - libpng=1.6.30=1
+- libstdcxx-ng=7.2.0=h7a57d05_2
 - libtiff=4.0.6=2
-- mkl=2017.0.3=0
+- mkl=2018.0.1=h19d6760_4
 - nccl=1.3.4=cuda8.0_1
-- numpy=1.13.1=py27_0
+- numpy=1.13.3=py27hbcc08e0_0
 - openssl=1.0.2l=0
 - pil=1.1.7=py27_2
 - pillow=3.4.2=py27_0
 - pip=9.0.1=py27_1
 - pycparser=2.18=py27_0
 - python=2.7.13=0
+- pytorch=0.3.0=py27cuda8.0cudnn7.0_0
 - readline=6.2=2
-- scipy=0.19.1=np113py27_0
+- scipy=1.0.0=py27hf5f0f52_0
 - setuptools=36.4.0=py27_1
 - six=1.10.0=py27_0
 - sqlite=3.13.0=0
@@ -34,7 +38,6 @@ dependencies:
 - wheel=0.29.0=py27_0
 - xz=5.2.3=0
 - zlib=1.2.11=0
-- pytorch=0.2.0=py27ha262b23_4cu75
 - pip:
   - backports.shutil-get-terminal-size==1.0.0
   - convertdate==2.1.1
@@ -63,12 +66,12 @@ dependencies:
   - ruamel.yaml==0.15.26
   - scandir==1.6
   - simplegeneric==0.8.1
-  - torch==0.2.0.post4
+  - torch==0.3.0
+  - torchvision==0.2.0
   - traitlets==4.3.2
   - tzlocal==1.4
   - umalqurra==0.2
   - wcwidth==0.1.7
   - xlrd==1.0.0
-  - torchvision==0.2.0
-prefix: /home/jcmaxwell/Libraries/anaconda2/envs/reseg-pytorch
+prefix: /home/thales/miniconda2/envs/reseg-pytorch
 
