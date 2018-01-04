@@ -225,7 +225,7 @@ class Model(object):
         dice_coefficients_str = ''
         for i, coeff in enumerate(dice_coefficients):
             label_name = self.labels[self.labels[:, 0].astype('int') == i][0, 1]
-            if i % 5 == 0:
+            if i % 3 == 0:
                 dice_coefficients_str += '\n'
             dice_coefficients_str += '| {:25} : {:.5f} |'.format(label_name, coeff)
 
