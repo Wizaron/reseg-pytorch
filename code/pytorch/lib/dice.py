@@ -44,6 +44,7 @@ def dice_loss(input, target, weight=None, smooth=1.0, size_average=True, reduce=
     dice = dice_coefficient(input, target, smooth=smooth)
 
     #dice_fg = dice[:, 1:]               # we ignore bg dice val, and take the fg
+    dice_fg = dice
 
     if not type(weight) is type(None):
         #weight = weight[1:]             # ignore bg weight
