@@ -234,6 +234,7 @@ class Model(object):
         print dice_coefficients_str
 
         mean_dice_coeff = dice_coefficients[1:].mean() # Discard bg class when calculating mean
+        print 'Mean Dice: {}'.format(mean_dice_coeff)
 
         return accuracy, mean_dice_coeff
 

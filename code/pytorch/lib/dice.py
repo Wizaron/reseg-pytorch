@@ -43,10 +43,10 @@ def dice_loss(input, target, weight=None, smooth=1.0, size_average=True, reduce=
 
     dice = dice_coefficient(input, target, smooth=smooth)
 
-    dice_fg = dice[:, 1:]               # we ignore bg dice val, and take the fg
+    #dice_fg = dice[:, 1:]               # we ignore bg dice val, and take the fg
 
     if not type(weight) is type(None):
-        weight = weight[1:]             # ignore bg weight
+        #weight = weight[1:]             # ignore bg weight
         weight = weight.size(0) * weight / weight.sum()  # normalize fg weights
         dice_fg = dice_fg * weight      # weighting
 
