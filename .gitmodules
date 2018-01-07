@@ -1,3 +1,0 @@
-[submodule "data/raw/clothing-co-parsing"]
-	path = data/raw/clothing-co-parsing
-	url = https://github.com/bearpaw/clothing-co-parsing.git

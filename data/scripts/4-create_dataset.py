@@ -5,7 +5,7 @@ from utils import create_dataset
 
 DATA_DIR = os.path.abspath(os.path.join(__file__, os.path.pardir, os.path.pardir))
 ANN_DIR = os.path.join(DATA_DIR, 'processed', 'annotations')
-IMG_DIR = os.path.join(DATA_DIR, 'raw', 'clothing-co-parsing', 'photos')
+IMG_DIR = os.path.join(DATA_DIR, 'raw', 'VOCdevkit', 'VOC2010', 'JPEGImages')
 OUT_DIR = os.path.join(DATA_DIR, 'processed', 'lmdb')
 
 try:
