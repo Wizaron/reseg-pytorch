@@ -39,4 +39,4 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batchsize
 model = Model(ms.LABELS, load_model_path=model_path, usegpu=opt.usegpu)
 
 # Test Model
-test_accuracy, test_loss = model.test(ms.CLASS_WEIGHTS, test_loader)
+test_accuracy, test_dice_coeff = model.test(ms.CLASS_WEIGHTS, test_loader)

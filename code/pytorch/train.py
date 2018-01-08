@@ -10,8 +10,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='', help='path to model (to continue training)')
 parser.add_argument('--usegpu', action='store_true', help='enables cuda to train on gpu')
 parser.add_argument('--nepochs', type=int, default=200, help='number of epochs to train for')
-parser.add_argument('--batchsize', type=int, default=1, help='input batch size')
-parser.add_argument('--nworkers', type=int, help='number of data loading workers [0 to do it using main process]', default=0)
+parser.add_argument('--batchsize', type=int, default=10, help='input batch size')
+parser.add_argument('--nworkers', type=int, help='number of data loading workers [0 to do it using main process]', default=2)
 opt = parser.parse_args()
 
 def generate_run_id():
@@ -70,5 +70,5 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batchsize
 model = Model(ts.LABELS, load_model_path=opt.model, usegpu=opt.usegpu)
 
 # Train Model
-model.fit(ts.CRITERION, ts.LEARNING_RATE, ts.WEIGHT_DECAY, ts.CLIP_GRAD_NORM, ts.LR_DROP_FACTOR, ts.LR_DROP_PATIENCE, ts.OPTIMIZER,
+model.fit(ts.CRITERION, ts.LEARNING_RATE, ts.WEIGHT_DECAY, ts.CLIP_GRAD_NORM, ts.LR_DROP_FACTOR, ts.LR_DROP_PATIENCE, ts.OPTIMIZE_BG, ts.OPTIMIZER,
           ts.TRAIN_CNN, opt.nepochs, ts.CLASS_WEIGHTS, train_loader, test_loader, model_save_path)

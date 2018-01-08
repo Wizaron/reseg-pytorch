@@ -78,7 +78,7 @@ class Model(object):
 
         return features_var, labels_var
 
-    def __define_criterion(self, class_weights, criterion='CE'):
+    def __define_criterion(self, class_weights, optimize_bg=False, criterion='CE'):
         assert criterion in ['CE', 'Dice', 'Multi', None]
 
         smooth = 1.0
@@ -93,18 +93,18 @@ class Model(object):
             if criterion == 'CE':
                 self.criterion_ce = torch.nn.CrossEntropyLoss(class_weights)
             elif criterion == 'Dice':
-                self.criterion_dice = DiceLoss(weight=class_weights, smooth=smooth)
+                self.criterion_dice = DiceLoss(optimize_bg=optimize_bg, weight=class_weights, smooth=smooth)
             elif criterion == 'Multi':
                 self.criterion_ce = torch.nn.CrossEntropyLoss(class_weights)
-                self.criterion_dice = DiceLoss(weight=class_weights, smooth=smooth)
+                self.criterion_dice = DiceLoss(optimize_bg=optimize_bg, weight=class_weights, smooth=smooth)
         else:
             if criterion == 'CE':
                 self.criterion_ce = torch.nn.CrossEntropyLoss()
             elif criterion == 'Dice':
-                self.criterion_dice = DiceLoss(smooth=smooth)
+                self.criterion_dice = DiceLoss(optimize_bg=optimize_bg, smooth=smooth)
             elif criterion == 'Multi':
                 self.criterion_ce = torch.nn.CrossEntropyLoss()
-                self.criterion_dice = DiceLoss(smooth=smooth)
+                self.criterion_dice = DiceLoss(optimize_bg=optimize_bg, smooth=smooth)
 
         if self.usegpu:
             if criterion == 'CE':
@@ -238,7 +238,7 @@ class Model(object):
 
         return accuracy, mean_dice_coeff
 
-    def fit(self, criterion_type, learning_rate, weight_decay, clip_grad_norm, lr_drop_factor, lr_drop_patience, optimizer,
+    def fit(self, criterion_type, learning_rate, weight_decay, clip_grad_norm, lr_drop_factor, lr_drop_patience, optimize_bg, optimizer,
             train_cnn, n_epochs, class_weights, train_loader, test_loader, model_save_path):
 
         assert criterion_type in ['CE', 'Dice', 'Multi']
@@ -251,7 +251,7 @@ class Model(object):
 
         train_loss_averager = Model.__get_loss_averager()
 
-        self.__define_criterion(class_weights, criterion=criterion_type)
+        self.__define_criterion(class_weights, optimize_bg=optimize_bg, criterion=criterion_type)
         self.__define_optimizer(learning_rate, weight_decay, lr_drop_factor, lr_drop_patience, optimizer=optimizer)
 
         self.__test(test_loader)
@@ -314,7 +314,7 @@ class Model(object):
 
     def test(self, class_weights, test_loader):
 
-        self.__define_criterion(class_weights, criterion=None)
+        self.__define_criterion(class_weights, optimize_bg=False, criterion=None)
         test_accuracy, test_dice_coeff = self.__test(test_loader)
 
         return test_accuracy, test_dice_coeff

@@ -107,13 +107,13 @@ class Architecture(nn.Module):
         self.n_classes = n_classes
 
         self.cnn = CNN(usegpu=usegpu)
-        self.renet1 = ReNet(256, 256, usegpu=usegpu)
-        self.renet2 = ReNet(256 * 2, 256, usegpu=usegpu)
-        self.upsampling1 = nn.ConvTranspose2d(256 * 2, 128, kernel_size=(2, 2), stride=(2, 2))
+        self.renet1 = ReNet(256, 100, usegpu=usegpu)
+        self.renet2 = ReNet(100 * 2, 100, usegpu=usegpu)
+        self.upsampling1 = nn.ConvTranspose2d(100 * 2, 50, kernel_size=(2, 2), stride=(2, 2))
         self.relu1 = nn.ReLU()
-        self.upsampling2 = nn.ConvTranspose2d(128, 128, kernel_size=(2, 2), stride=(2, 2))
+        self.upsampling2 = nn.ConvTranspose2d(50, 50, kernel_size=(2, 2), stride=(2, 2))
         self.relu2 = nn.ReLU()
-        self.output = nn.Conv2d(128, self.n_classes, kernel_size=(1, 1), stride=(1, 1))
+        self.output = nn.Conv2d(50, self.n_classes, kernel_size=(1, 1), stride=(1, 1))
 
     def forward(self, x):
         x = self.cnn(x)
