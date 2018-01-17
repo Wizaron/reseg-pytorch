@@ -29,7 +29,7 @@ def generate_run_id():
 RUN_ID = generate_run_id()
 model_save_path = os.path.abspath(os.path.join(os.path.abspath(__file__), os.path.pardir, os.path.pardir,
                                                os.path.pardir, 'models', RUN_ID))
-os.mkdir(model_save_path)
+os.makedirs(model_save_path)
 
 CODE_BASE_DIR = os.path.abspath(os.path.join(os.path.abspath(__file__), os.path.pardir))
 shutil.copytree(os.path.join(CODE_BASE_DIR, 'settings'), os.path.join(model_save_path, 'settings'))
